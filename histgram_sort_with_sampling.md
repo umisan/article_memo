@@ -141,7 +141,7 @@ AMS-sortではヒストグラムを計算したあとにscanning techniqueを用
 
 locally balanced partitioningを達成するためにはサンプルサイズは$\Theta(p(\log p + 1/\epsilon))$必要になる。
 
-![table2](https://github.com/umisan/myimages/blob/main/table2.PNG)
+![table2](table2.PNG)
 
 
 # HISTOGRAM SORT WITH SAMPLING
@@ -336,6 +336,6 @@ random samplingでは、各プロセッサーは$S/p$個のキーをサンプル
 probeがヒストグラムの作成のためにブロードキャストされる。長さが$S$のメッセージの送信のコミュニケーションコストは$O(S)$。
 よって、サンプリングフェーズのコミュニケーションコストと計算コストはともにサンプルサイズに比例する。
 
-![table2](https://github.com/umisan/myimages/blob/main/table2.PNG)
+![table2](table2.PNG)
 
 ベストな設定のHSSは他のアルゴリズムよりも複雑度の面で勝っている。
