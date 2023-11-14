@@ -1,9 +1,19 @@
 # 論文のテーマ
+この論文では効率的な並列ソーティングがテーマになっている。
+並列ソーティングでは、ソートした結果を各プロセッサーに配布する必要があるが、この配布の仕方には2種類存在する。
+- exact splitting
+  - すべてのプロセッサーは同じ数のキーを持つ
+- $\epsilon$-balanced partiton
+  - 各プロセッサーは$N(1 + \epsilon)/p$以上のキーを持たない
+
+この論文では、$\epsilon$-balanced partitonのアルゴリズムについて考える。
+
+
 並列でのソーティングには以下の2種類の大きな種類がある
 - partition-based sorting algorithms
 - merge-based sorting algorithms
 
-partition-based sorting algorithmsでは、元データを均等に分割するパーティションを決定し、そのパーティションに基づいてデータを再配布することによって、ソートを行う。
+partition-based sorting algorithmsでは、元データを均等に分割するパーティションを決定し、そのパーティションに基づいてデータを再配布することによってソートを行う。
 partition-based sorting algorithmsには、merge-basedに比べてコミュニケーションコストが低いため、現代のアーキテクチャに向いているという利点がある。
 既存の最先端の並列ソーティングのアルゴリズムでは、samplingとhistogramingというテクニックが利用されている。
 この論文では、samplingとiterative histogramingを組み合わせてpartitionを探索するHistogram sort with sampling(HSS)を提案している。
@@ -14,9 +24,9 @@ partition-based sorting algorithmsには、merge-basedに比べてコミュニ�
     - プロセッサー数
 - $N$
     - 入力シーケンスの長さ
-- $A(i) 0 \leq i \leq N - 1$
+- $A(i) \  0 \leq i \leq N - 1$
     - 入力シーケンスのi番目のキー
-- $I(i) 0 \leq i \leq N - 1$
+- $I(i) \ 0 \leq i \leq N - 1$
     - 全体の順序におけるi番目のキー
     - $A(j) = I(r)$の場合、ランク$r$を持つとする
 
@@ -107,19 +117,19 @@ histogram sortの流れ
     - 通常初期のprobeはkeyの区間を均等に分割するように作成される
 2. 各プロセッサーはprobeのキーによって作られる区間に自身の入力が何個含まれるかをカウントする
     - これはローカルのヒストグラムとなる
-3. セントラルプロセッサーでローカルヒストグラムを足し合わせて、グローバルヒストグラムを計算する
+3. ローカルヒストグラムを足し合わせて、グローバルヒストグラムを計算する。($M$-item reduction)
 4. もし、$p - 1$個のsplitterに対する十分小さい区間が見つかったら、セントラルプロセッサーはsplitterを確定し、ブロードキャストする。それ以外の場合は、ヒストグラムを利用してprobeを更新し配布し、splitterを決定するまで繰り返す
 
 probeの改良は、ヒストグラムで隣接する区間を分割することで行われる。
 Histogram sortは、任意のレベルのload balanceを実現することができ、各ラウンド使用するヒストグラムのサイズは$O(p)$程度となっており比較的小さいため、スケールさせることができる。しかし、ラウンド数は大きくなる可能性があり、特にデータの分布に偏りがある場合に顕著になる。$Z$を入力の範囲とすると、ラウンド数はたかだか$\log(Z)$となる。Histogram sortは実際に超並列の科学アプリケーションで利用されている。例 [ChaNGa](https://ieeexplore.ieee.org/document/5470406)
 
-先行研究
+先行研究  
 (1)[https://ieeexplore.ieee.org/document/4134268]  
 (2)[https://ieeexplore.ieee.org/document/5470406]
 
 ## Large scale parallel sorting algorithms
 [HykSort](https://users.flatironinstitute.org/~dmalhotra/files/pubs/ics13sort.pdf)は直近で最も優れた実践的なアルゴリズム。
-HykSortはsample sortとhypercube quick sortのハイブリッドになっている。しかし、HykSortがsplitterの決定に使っているsamplingとhistogrammingの手法はHSSとは異なっている。HykSortはHSSと比較してワーストケースで少なくとも$\Omega(\log (p) / \log^2\log (p))$倍の実行時間になる。実際にこの論文では、HSSとHykSortのsamplingをHSSのアルゴリズムに置き換えたものを実装して、収束が速いことを確認している。
+HykSortはsample sortとhypercube quick sortのハイブリッドになっている。しかし、HykSortがsplitterの決定に使っているsamplingとhistogrammingの手法はHSSとは異なっている。HykSortはHSSと比較してワーストケースで少なくとも$\Omega(\log (p) / \log^2\log (p))$倍のサンプルが必要になる。実際にこの論文では、HSSとHykSortのsamplingをHSSのアルゴリズムに置き換えたものを実装して、収束が速いことを確認している。
 
 [AMS-sort](https://dl.acm.org/doi/10.1145/2755573.2755595)はoverpartitioningをsamplingに使っているアルゴリズム。
 AMS-sortがsplitterの決定に使っているscanning algorithmはhistogrammingを1ラウンドしかしなかった場合のHSSより優れている。
@@ -134,10 +144,10 @@ AMS-sortの流れ
 
 アルゴリズムは高確率でlocally balancedなsplitterを決定することができ、oversampling parameterはrandom samplingのsample sortより小さい。
 
-5章で示す通り、histogrammingのコストは同じ数のkeyをsamplingするコストと漸近的に等しいため、AMS-sortは理論的にsample sortよりも優れている。
+後ほど示す通り、histogrammingのコストは同じ数のkeyをsamplingするコストと漸近的に等しいため、AMS-sortは理論的にsample sortよりも優れている。
 
 ### Scanning algorithm
-AMS-sortではヒストグラムを計算したあとにscanning techniqueを用いてsplitterを決定する。このアルゴリズムはヒストグラムをscanしていって、可能な限り最大のキーを順番にプロセッサーに割り当てていく。（実際にはヒストグラムのバケットを割り当てていく）これによって、各プロセッサーのロードは$N(1 + \epsilon)/p$を超えないようにする。サンプルサイズが十分に大きければ、最初の$p - 1$個のプロセッサーの平均のロードは高い確率で$N/p$より大きくなる。
+AMS-sortではヒストグラムを計算したあとにscanning techniqueを用いてsplitterを決定する。このアルゴリズムはヒストグラムをscanしていって、可能な限り最大のキーを順番にプロセッサーに割り当てていく。（実際にはヒストグラムのバケットを割り当てていく）これによって、各プロセッサーのロードが$N(1 + \epsilon)/p$を超えないようにする。サンプルサイズが十分に大きければ、最初の$p - 1$個のプロセッサーの平均のロードは高い確率で$N/p$より大きくなる。
 
 locally balanced partitioningを達成するためにはサンプルサイズは$\Theta(p(\log p + 1/\epsilon))$必要になる。
 
@@ -154,10 +164,10 @@ HSSはsampling phaseとhistogramming phaseを交互に行う。これによっ�
 マルチラウンドのHSSはAMS-sortより効率的で、$O(1)$回のhistogrammingで漸近的な改善には十分となる。
 
 HSSでは、各ターゲットレンジ$T_i = [Ni/p - N\epsilon/2p, Ni/p + N\epsilon/2p]$に含まれるsplitterの候補を見つけることが目的となる。
-もし各$T_i$について、$T_i$にランクが含まれるキーが少なくとも1つサンプリングされれば、すべてのsplitterを決定することができる。直感的には、十分に大きなサンプルサイズであれば、このようなことが高確率で起こると考えられる。
+各$T_i$について、$T_i$にランクが含まれるキーが少なくとも1つサンプリングされれば、すべてのsplitterを決定することができる。直感的には、十分に大きなサンプルサイズであれば、このようなことが高確率で起こると考えられる。
 
 Lemma 4.1  
-If every key is independently picked in the sample with probability, $ps/N = (2p\ln p)/\epsilon N$, where s, the oversampling ration is choesn to be $(2\ln p)/\epsilon$, then at least one key is chosen with rank in $T_i$ for each i, w.h.p..
+If every key is independently picked in the sample with probability, $ps/N = (2p\ln p)/\epsilon N$, where s, the oversampling ration is choesn to be $(2\ln p)/\epsilon$, then at least one key is chosen with rank in $T_i$ for each $i$, w.h.p..
 
 証明の方針  
 $T_i$について、1つもキーがサンプリングされない確率を上から抑える  
@@ -182,7 +192,7 @@ $s$はsampling ratioと呼ぶ。これまで出てきたoversampling ratioとは
 
 ### HSS with k histogramming rounds: Algorithm
 アルゴリズムの流れ
-1. 1ラウンド目のsampling phaseでは、入力の全キーが確率$ps_1/N$でサンプリングされる。$s_i$は初期のsampling ratio。サンプルはセントラルプロセッサーに集められ、その後probeがhistogramming phaseのために配布される
+1. 1ラウンド目のsampling phaseでは、入力の全キーが確率$ps_1/N$でサンプリングされる。$s_i$は初期のsampling ratio。サンプルはセントラルプロセッサーに集められ、その後probeとしてhistogramming phaseのために配布される
 2. 各プロセッサーはローカルヒストグラムを計算し、それを足し合わせグローバルのヒストグラムを計算する。
 3. 各splitter $i$について、セントラルプロセッサーは$L_j(i)$と$U_j(i)$を管理し、splitter intervalを各プロセッサーに配布する
     - $L_j(i)$はjラウンド後に$Ni/p$に最も下から近かったキーのランク
@@ -192,7 +202,7 @@ $s$はsampling ratioと呼ぶ。これまで出てきたoversampling ratioとは
     - $j = k$になるまでこれを繰り返す
 5. histogramming phaseが終了したら、サンプルの中から最も$Ni/p$に近いキーを$i$番目のsplitterにする
 
-figure 1入れる
+![figure1](https://umisan.github.io/article_memo/figure4.PNG)
 
 HykSortのサンプリングとHSSのサンプリングの違いは、HykSortはすべてのsplitter intervalから均等にサンプルするのに対して、HSSはintervalの長さに比例してサンプリングすること。これによって、HSSはintervalの縮小が速い。
 
@@ -206,11 +216,11 @@ $|\gamma_j| \leq \Sigma_i U_j(i) - L_j(i)$
 
 HSSの性能の証明の流れ
 1. 最後のラウンドでsampling ratioが十分に大きければ良いsplittingを達成することの証明
-2. 各ラウンドのサンプルサイズを上から抑える
+2. 各ラウンドのサンプルサイズをsampling ratioの式で上から抑える
 3. サンプルサイズが定数分の1に減少していくようにsampling ratioを設定する
 
 Lemma 4.3  
-if $s_k = \frac{2\ln p}{\epsilon}$ be the sampling ratio for the $k^{th}$ round, then at least one key is chosen from each $T_i$ after k rounds w.h.p..
+if $s_k = \frac{2\ln p}{\epsilon}$ be the sampling ratio for the $k^{th}$ round, then at least one key is chosen from each $T_i$ after $k$ rounds w.h.p..
 
 これが証明の流れの1にあたる補題  
 これはLemma 4.1を$s_j = \frac{2p \ln p}{\epsilon}$として適用すれば即座に求まる。  
@@ -321,7 +331,7 @@ BSPのアルゴリズムの複雑性は以下の3つの要素から成り立っ�
 
 ## Cost of Sampling
 サイズ$S$のサンプルを1つのプロセッサーに集めるとすると、$O(S)$のコミュニケーションコストのsuperstepが必要になる。
-random samplingでは、各プロセッサーは$S/p$個のキーをサンプルし、それを1つのプロセッサーに集める。送信前に各プロセッサーでサンプルがソートされていれば、マージステップの計算量は$O(S \log p)$になる。
+送信前に各プロセッサーでサンプルがソートされていれば、マージステップの計算量は$O(S \log p)$になる。
 
 ## Cost of Histogramming
 ローカルヒストグラムの計算量
@@ -339,3 +349,7 @@ probeがヒストグラムの作成のためにブロードキャストされる
 ![table2](https://umisan.github.io/article_memo/table2.PNG)
 
 ベストな設定のHSSは他のアルゴリズムよりも複雑度の面で勝っている。
+
+メモ  
+この論文はSPAA 2023の[この論文](https://arxiv.org/abs/2204.04599)の前提となっている論文  
+2023の論文では解析をよりタイトにし、かつ、このアプローチのサンプルサイズとラウンド複雑性が最適であることを証明した。  
