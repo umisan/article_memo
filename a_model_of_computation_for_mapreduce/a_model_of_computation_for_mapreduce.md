@@ -140,4 +140,84 @@ mapperとreducerは自身が受け取った入力ではなく、元の問題の�
 ここから定義したモデルの妥当性について議論する。
 
 ### Machines
+前述したように$n$がとても大きい場合、マシンの数が$n$に線形であるというのは現実的ではない。
+一方この定義では小さい$\epsilon$も許容しており、この場合も$n$がとても大きい場合には、線形のときと同様に大量のマシンが必要になってしまうが、マシンの台数を$O(n^{1/2})$とするのも不自然だと考えられる。
+
+### Memory Restrictions
+mapperとreducerは$O(n^{1 - \epsilon})$のメモリを持つマシンの上で動作するので、すべてのペア$<key; value>$のサイズは$O(n^{1-\epsilon})$である必要がある。
+
+また、トータルのメモリのサイズは$O(n^{2 - 2\epsilon})$である。
+reducerはすべてのmapperの処理が終わってからしか動作できないので、全mapperの出力である$U'_r$のサイズは$O(n^{2 - 2\epsilon})$である必要がある。
+
+一方mapperは入力を一つずつ処理できるため、reducerには上記のような制限はない。
+
+### Shuffle Step
+このステップでは、reducerを実行するために、同じキーを持つペアを同じマシンに集める。
+このときにマシンでメモリの制約違反が起こってはいけない。
+次のLemmaでDefinition 3.1においてメモリの制約違反を起こさずに適切にキーのshuffleが行えることを証明する。
+
+Lemma 3.1  
+Consider round $r$ of the execution of an algorithm in $MRC$. Let $K_r$ be the set of keys in $U'_r$, let $V_r$ be the multiset of values in $U'_r$ and let $V_{k,r}$ denote the multiset of values in $U'_r$ that have key $k$.  
+Then $K_r$ and $V_r$ can be partitioned across $\Theta(n^{1 - \epsilon})$ machines such that all machines get $O(n^{1-\epsilon})$ bits, and the pair $<k, V_{k,r}>$ gets sent to the same machine.
+
+証明には以下の事実とminimum makespan scheduling problemに対するGrahan's greedy algorithmを利用する。  
+[参考文献1]()  
+[参考文献2]()
+
+事実
+- $s(V_r) + S(K_r) \leq s(U'_r) = O(n^{2 - 2\epsilon})$
+  - $s(B) = \Sigma_{b \in B} |b|$
+- $|k| + s(V_{k, r})$は$O(n^{1 - \epsilon})$
+  - reducerのスペースが$O(n^{1 - \epsilon})$に制限されているため
+
+
+Graham's greedy algorithmより、一つのマシンに割り当てられる最大のビット数は平均ロードと$<k, V_{k,r}>$の最大ビット数の和よりも大きくならない。
+
+$$
+\leq \frac{s(V_r) + s(K_r)}{\rm{number\ of\ machines}} + \max_{k \in K_r}(|k| + s(V_{k,r})) \\
+\leq \frac{O(n^{2 - 2\epsilon})}{\Theta(n^{1-\epsilon})} + O(n^{1 - \epsilon}) \\
+\leq O(n^{1-\epsilon})
+$$
+
+これより、Definition 3.1はshuffle stepの実行のためにも必要であることがわかる。
+
+### Time Restrictions
+mapperとreducerが元の問題の入力サイズの多項式時間の計算能力を持つことが非現実的だという指摘も考えられる。
+しかし、$O(n \log n)$のような任意の関数で制限することもまた自然ではない。
+
+実際のMapReduceの1ラウンドの計算時間は非常に長くなることがある。
+よって、ラウンド数を抑えることが重要となる。
+理想的にはアルゴリズムは$MRC^0$で有るべきだが、多くの重要なアルゴリズムが$MRC^1$になっている。
+
+# Related Work
+最初にPRAMとMRCを比較し、その後MapReduceを利用した他の論文について議論する。
+
+## Comparing MapReduce and PRAMs
+現在最も広く有名な並列計算のモデルPRAM
+これに次ぐのが以下の2つ
+- [LogP]()
+- [BSP]()
+
+これらの3つのモデルはアーキテクチャに依存しないが、アーキテクチャに依存したモデルを研究している研究者もいる。
+
+ここでは最も有名なPRAMとMRCを比較する。
+PRAMでは以下のように計算が実行される。
+- 任意の数のプロセッサーが
+- 制限のない巨大なメモリを共有し
+- 共有された入力に対して同時に処理を実行し、出力を生成する
+
+プロセッサー数は通常サイズ$n$の問題に対して多項式に制限される。
+
+PRAMの研究には2つの種類が存在する。
+- PRAMではどのような問題が多項式のプロセッサー数かつpolylog時間で解くことができるのか
+  - このような問題を$NC$と呼ぶ
+- PRAMではどのような問題が効率よく並列化できるのか
+  - 逐次的なアルゴリズムより早く、プロセッサータイムのproductは逐次的なアルゴリズムの実行時間に近い
+
+PRAMは理論的には美しいが、現実では問題点も大きい
+- 大量のプロセッサー数を持つshared memory machineは存在せずシミュレーションは遅い
+- shared memoryで巨大な計算機を作ることは難しい
+- プロセッサー数が$n$の多項式というのは非現実的
+
+
 
