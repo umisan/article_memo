@@ -219,5 +219,67 @@ PRAMは理論的には美しいが、現実では問題点も大きい
 - shared memoryで巨大な計算機を作ることは難しい
 - プロセッサー数が$n$の多項式というのは非現実的
 
+自然な発想として、$MRC$や$DMRC$というクラスが$NC$や$P$のような既存の複雑性のクラスとどのような関係にあるのかということが考えられる。
+ここでは$DMRC$をメインに取り上げる。
+
+$DMRC \subseteq P$は明らかに成り立つが、$P \subseteq DMRC$は成り立つのか？
+同様に$DMRC$と$NC$の関係はどうなっているのか。
+7章で、大きなlanguage class $L \in NC$が$L \in DMRC$であることを示す。（条件を満たすPRAMのアルゴリズムはDMRCでシミュレーションできる。）
+
+逆については以下の定理が成り立つ。  
+Theorem 4.1  
+If $P \neq NC$ then $DMRC \not \subseteq NC$
+
+$P \subseteq DMRC$は成り立たないと考えているが証明はできていない。
+
+
+## MapReduce: Algorithms and Models
+MapReduceはデータセットに1つのワードがどの程度現れるかというような、ナイーブな並列化についてよく研究されているが、近年非自明な問題についてもアルゴリズムが研究されている。
+- massive graphsの直径の計算
+- グラフにいくつのtrianglesが存在するかの計算
+- Em clustering algorithm
+
+これらの研究は実践的なアルゴリズムを与えているが、厳密なモデルの定義はされていない
+
+MapReduceのモデルとしてはFeldmanの研究が存在する。
+この研究ではMassively Unordered Distributed(MUD) algorithmsという概念が提案されている。
+このモデルとの違いは
+- MUDはreducerはデータをstreamで処理する
+  - MRCはランダムアクセスができる
+- MUDではreducerはpolylogarithmicスペースしか利用できない
+
+したがって、MRCはよりパワフルなモデルになっている
+
+# Finding an MST of a Dense Graph Using MapReduce
+モデルの定義が終わったのでここから具体的なアルゴリズムについて紹介していく。
+この章ではDense GraphのMSTを計算するMRCアルゴリズムを紹介する。
+（発表時間の都合上アルゴリズムの概要のみに留めます。）
+
+入力
+- グラフ$G = (V, E)$
+- $|V| = N$
+- $|E| = m \geq N^{1 + \epsilon}$ for some constant $c > 0$
+
+$n$は引き続き入力の長さを表す。
+
+**アルゴリズム**    
+固定した$k$に対して以下を定義する。
+- $V = V_1 \cup V_2 \cup \cdots \cup V_k$ 
+  - 任意の$i \neq j$について$V_i \cap V_j = \emptyset$
+  - 任意の$i$について$|V_i| = N/k$
+- 各ペア${i, j}$について頂点集合$V_i \cup V_j$で誘導される辺集合を$E_{i, j} \subseteq E$とする
+- 誘導グラフを$G_{i,j} = (V_i \cup V_j, E_{i,j})$とする
+
+ステップ1  
+$\binom{k}{2}$個のサブグラフ$G_{i,j}$について、minimum spanning forest $M_{i,j}$を計算する
+
+ステップ2  
+$M_{i,j}$から以下のようなグラフ$H$を構成する  
+$H = (V, \bigcup_{i,j} M_{i,j})$
+
+ステップ3  
+$H$のMSTを計算する
+
+# An Algorithmic Design Technique for $MRC$
 
 
