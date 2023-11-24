@@ -281,5 +281,94 @@ $H = (V, \bigcup_{i,j} M_{i,j})$
 $H$のMSTを計算する
 
 # An Algorithmic Design Technique for $MRC$
+ここから$MRC$における多くのアルゴリズムのビルディングブロックになる、$MRC$-parallelizable functionsについて説明する。
 
+Definition 6.1  
+Let $S$ be a set. Call a function $f$ on $S$ $MRC$-parallelizable if there are functions $g$ and $h$ so that:
+1. For any parition $T = \{T_1, T_2, \dots, T_k\}$ of $S$, where $\bigcup_i T_i = S$ and $T_i \cap T_j = \emptyset$ for $i \neq j$ (of course), $f$ can be expressed as: $f(S) = h(g(T_1), g(T_2), \dots, g(T_k))$.
+2. $g$ and $h$ can be expressed in $O(\log n)$ bits.
+3. $g$ and $h$ can be computed in time ploynomial in $|S|$ and every output of $g$ can be expressed in $O(\log n)$ bits.
 
+直感的にはこの定義はもし関数$f$を集合$S$について評価したい場合は、以下の手順を取ればいいことを示している。
+1. $S$を任意のパーティションで分割する
+2. 個別に$g$を適用する
+3. 2の結果に$h$を適用する
+
+Lemma 6.1  
+Consider a universe $\mathcal{U}$ of size $n$ and a collection $\mathcal{S} = \{S_1, \dots, S_k\}$ of subsets of $\mathcal{U}$, where $S_i \subseteq \mathcal{U}$, $\Sigma_{i=1}^k |S_i| \leq n^{2 - 2\epsilon}$, and $k \leq n^{2-3\epsilon}$. Let $\mathcal{F} = \{f_1, \dots, f_k\}$ be a collection of $\mathcal{MRC}$-parallelizable functions. then the output of $f_1(S_1), \dots, f_k(S_k)$ can be computed using $O(n^{1-\epsilon})$ reducers each with $O(n^{1-\epsilon})$ space.
+
+この補題は、同じユニバースの部分集合の上に定義された$\mathcal{MRC}$-parallelizable functionsはMapReduceのサブルーチンとして計算可能であること示している。
+オーバーフローを起こさないように入力をreducerに分配する部分をこの補題が管理するので、アルゴリズムの設計者はその部分を気にする必要がなくなることが重要。
+
+基本的には1つのreducerに$S_i$と$f_i$を割り当てて計算を行いたい。
+しかし、$S_i$は非常に大きくなる可能性があるため、これは実現できない。
+したがって、$|S_i| > n^{1-\epsilon}$の場合は、$f_i(S_i)$の計算は複数のreducerに分散して行う必要がある。
+
+この問題に対処するために、$f_i$が$\mathcal{MRC}$-parallelizableであること利用する。
+具体的には
+1. reducerを$t$個のブロックに分割する
+2. $S_i$を割り当てられたブロックに属するreducerに分配し、$g_i(S_i)$の中間値を計算する
+3. 2の結果を1つのreducerに集め、最終的な$h$を計算する
+
+より形式的に定義する。
+
+**Input**  
+サブルーチンへの入力は$i \in [k]$について、以下の3種類で構成される。
+- $<i; u>$のリスト
+  - $u \in S_i$ 
+- $g_i$
+- $h_i$
+
+**Initialize**  
+- $M = n^{1 - \epsilon}$をサブルーチンが利用するreducerの数とする。  
+- それをサイズ$B = \Theta(n^\epsilon)$のブロックに分割する。  
+- $t = \lceil M / B \rceil$をブロック数とする。  
+- univarsal hash functions $hash_1$と$hash_2$を定義する。
+  - $[k] \to [t]$
+
+**Map 1**  
+各$<i; u>$を$<r; (u; i)>$にmapする。
+- $r$はブロック$B_{hash_1(i)}$に属するreducerから一様ランダムに選ぶ
+
+各$g_i$と$h_i$を$<b;(g_i, i)>$と$<b; (h_i, i)>$にmapする。
+- $b \in B_{hash_1(i)}$
+  - すべてのブロック内のreducerに分配するため
+  
+**Reduce 1**  
+reducerへの入力は以下のような形式になっている  
+$<r; ((u_1, i), \dots, (u_k, i), (g_i, i), (h_i, i))>$
+- $\{u_1, u_2, \dots, u_k\} = T_j \subseteq S_i$
+  - パーティションされた$S_i$の1つのパート
+
+reducerは$g_i(T_j)$を計算し$<r; (g_i(T_j), i, h_i)>$を出力する。
+
+**Map 2**  
+$<r; (g_i(T_j), i, h_i)>$を$<hash_2(i); (g_i(T_j), h_i)>$に変換する。
+
+**Reduce 2**  
+最後のreducerに対する入力は以下のような形式になっている。  
+$<hash_2(i); ((g_i(T_1), h_i), (g_i(T_2), h_i), \dots, (g_i(T_B), h_i))>$  
+reducerは$h_i$を計算し、$<hash_2(i); f_i(S_i)>$を出力する。
+
+次の補題によって、Reduce 1でオーバーフローが起きないことが保証される。
+
+Lemma 6.2  
+Each reducer in step Reduce 1 will have $\tilde{O}(n^{1-\epsilon})$ elements mapped to it with high probability.
+
+証明の方針
+1. $n^\epsilon$個のreducerで構成されるブロック全体に高い確率で$\tilde{O}(n)$個の要素しかマップされないことを示す。
+2. ブロック内のどのreducerに個別の要素がマップされるかは一様ランダムに選ばれるので、チェルノフバウンドを利用して補題を示す。
+
+細かい証明は省略します。
+
+Lemma 6.3  
+With high probability, each reducer in step Reduce 2 will have at most $n^{1-\epsilon}$ values of $g_i$ mapped to it.
+
+証明には$hash_2$がユニバーサルハッシュ関数であることを利用する。
+- 1つのブロックにマップされる要素の期待値は$\frac{k}{t}$
+
+$k \geq t$のとき$\frac{k}{t} \leq n^{1-\epsilon}$であることを利用して、チェルノフバウンドを適用することで、あるブロック$b$に割り当てられる要素の数が多くなる確率を抑える。  
+最後にunion boundを取ってオーバーロードになるreducerが存在する確率が低いことを示す。
+
+Lemma 6.3と同じような議論で、reducerは$g_i$と$h_i$を持つのに十分なメモリを持っていることを示せる。
+Lemma 6.2とLemma 6.1と$g_i$と$h_i$がpolynomial-time computableである事実からLemma 6.1が証明できる。
