@@ -444,7 +444,7 @@ s-t connectivityでは
 ステップ3  
 $s$と$t$が同じラベルを持っていたらtrueを出力し、もっていなかったらfalseを出力する。
 
-[アルゴリズムの流れ](https://umisan.github.io/article_memo/a_model_of_computation_for_mapreduce/labeling.png)
+![アルゴリズムの流れ](https://umisan.github.io/article_memo/a_model_of_computation_for_mapreduce/labeling.png)
 
 Lemma 6.4  
 At any point of the algorithm, if any two nodes $s$ and $t$ have the same label, then there is a path from $s$ to $t$ in $G$.
