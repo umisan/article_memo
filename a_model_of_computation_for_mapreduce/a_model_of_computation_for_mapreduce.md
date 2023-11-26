@@ -14,7 +14,7 @@ MapReduceフレームワークは既存のよく研究されている並列コ�
 
 # MapReduce Basics
 MapReduceプログラミングにおける基本的な情報の単位はキーバリューペア
-- $<key; value>$
+- $\lang key; value \rang$
   - $key$と$value$はバイナリ文字列
 
 任意のMapReduceアルゴリズムの入力はキーバリューペアのセットである。
@@ -46,17 +46,17 @@ $a$はフリークエンシーの集合
 - $x$ : 長さ$n$の入力文字列
 - $x_i$ : $x$における$i$番目の文字
 - $\$$ : 特殊文字
-- MapReduceの入力は$<i; x_i>$で表す
+- MapReduceの入力は$\lang i; x_i\rang$で表す
 
 プログラムの流れ
 1. 最初のmapper $\mu_1$ではキーとバリューを入れ替える
-   - $\mu_1(<i;x_i>) = <x_i; i>$
+   - $\mu_1(\lang i;x_i\rang) = \lang x_i; i\rang$
 2. 最初のreducer $\rho_1$では、集められたペアーから部分的なfrequency momentを計算する
-   - $\rho_1(<x_i; {v_1, \dots, v_m}>) = <x_i; m^k>$
+   - $\rho_1(\lang x_i; {v_1, \dots, v_m}\rang) = \lang x_i; m^k\rang$
 3. 次のmapperでは2の計算結果を足し合わせるために、キーを特殊文字に置き換える
-   - $\mu_2(<x_i; v>) = <\$; v>$
+   - $\mu_2(\lang x_i; v\rang) = \lang \$; v\rang$
 4. 全ペアーが同じキーを持つので、すべての入力は一つのマシンに集められる。よって最後はすべてを足し合わせればいい
-   - $\rho_2(<\$; {v1, \dots, v_l}>) = <\$, \Sigma_i v_i>$
+   - $\rho_2(\lang \$; {v1, \dots, v_l}\rang) = \lang \$, \Sigma_i v_i\rang$
 
 並列化の容易さの他のMapReduceの利点はフレームワークがフォールトトレランスやデータの分配といった低レベルの処理をプログラマーに対して隠蔽していること。プログラマーはそういったことを意識せずにmapperとreducerのみを開発すれば良い。
 
@@ -69,27 +69,27 @@ $a$はフリークエンシーの集合
 最初にmapperとreducerを定義するところから始める
 
 Definition 2.1  
-A mapper is a (possibly randomized) function that takes as input one ordered $<key; value>$ pair of binary strings. As output the mapper produces a finite multiset of new $<key; value>$ pairs
+A mapper is a (possibly randomized) function that takes as input one ordered $\lang key; value\rang$ pair of binary strings. As output the mapper produces a finite multiset of new $\lang key; value\rang$ pairs
 
 mapperは1度に1つのペアのみ処理することに注意
 
 Definition 2.2  
-A reducer is a (possibly randomized) function that takes as input a binary string $k$ which is the key, and a sequence of values $v_1, v_2, \dots$ which are also binary strings. As output, the reducer produces a multiset of pairs of binary strings $<k; v_{k,1}>, <k; v_{k, 2}>, <k; v_{k,3}>, \dots$. The key in the output tuples is identical to the key in the input tuple.
+A reducer is a (possibly randomized) function that takes as input a binary string $k$ which is the key, and a sequence of values $v_1, v_2, \dots$ which are also binary strings. As output, the reducer produces a multiset of pairs of binary strings $\lang k; v_{k,1}\rang, \lang k; v_{k, 2}\rang, \lang k; v_{k,3}\rang, \dots$. The key in the output tuples is identical to the key in the input tuple.
 
 mapperはkeyを自由に操作することができるが、reducerはkeyを操作することはできない。
 
 次にシステムがどのようにMapReduceを実行するのかを示す。
 MapReduceプログラムはmapperとreducerの系列で構成される。  
 
-$<\mu_1, \rho_1, \mu_2, \rho_2, \dots, \mu_R, \rho_R>$
+$\lang \mu_1, \rho_1, \mu_2, \rho_2, \dots, \mu_R, \rho_R\rang$
 
-入力は$<key; value>$のマルチセットで$U_0$とする。
+入力は$\lang key; value\rang$のマルチセットで$U_0$とする。
 入力$U_0$に対してプログラムは以下のように実行される。
 
 For $r = 1, 2, \dots, R$, do:  
-1. $U_{r - 1}$の各ペア$<k; v>$を$\mu_r$に投入し実行する。mapperはtupleのシーケンス$<k_1; v_1>, <k_2; v_2>, \dots$を生成する。$U'_r$を$\mu_r$によって生成されるマルチセットとする。すなわち$U'_r = \bigcup_{<k;v> \in U_{r - 1}} \mu_r (<k; v>)$
+1. $U_{r - 1}$の各ペア$\lang k; v\rang$を$\mu_r$に投入し実行する。mapperはtupleのシーケンス$\lang k_1; v_1\rang, \lang k_2; v_2\rang, \dots$を生成する。$U'_r$を$\mu_r$によって生成されるマルチセットとする。すなわち$U'_r = \bigcup_{\lang k;v\rang \in U_{r - 1}} \mu_r (\lang k; v\rang)$
 2. 各$k$に対して$V_{k, r}$を$U'_r$でキーに$k$を持つバリューのマルチセットとする。MapReduceを実装するシステムは$V_{k,r}$を$U'_r$から生成する。
-3. 各$k$に対して、1つの分離された$\rho_r$に$k$と$V_{k, r}$の任意の順列を入力し実行する。reducerは$<k;v'_1>,<k;v'_2>,\dots$を生成する。$U_r$をreducerが生成するマルチセットとする。すなわち$U_r = \bigcup_k \rho_r(<k; V_{k,r}>)$
+3. 各$k$に対して、1つの分離された$\rho_r$に$k$と$V_{k, r}$の任意の順列を入力し実行する。reducerは$\lang k;v'_1\rang,\lang k;v'_2\rang,\dots$を生成する。$U_r$をreducerが生成するマルチセットとする。すなわち$U_r = \bigcup_k \rho_r(\lang k; V_{k,r}\rang)$
 
 最後のreducer $\rho_r$が停止すると計算が終了する。
 
@@ -109,19 +109,19 @@ MapReduceでは問題を分解して並列に解くことができるので、�
 具体的にはマシンの台数も問題のサイズのsublinearとする。
 
 **Time**  
-[先行研究]()とは異なり、MRCではmapperとreducerの計算能力を基本的には制限しない。
+[先行研究](https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=2503d67c2c82f9cf193fafb93aecde076f6b7b16)とは異なり、MRCではmapperとreducerの計算能力を基本的には制限しない。
 mapperとreducerはオリジナルの入力サイズの多項式時間で動作するとする。
 またshuffleステージは時間がかかる処理のため、全体で必要になるラウンド数も少ないことが求められる。
 
 以上より$MRC$を以下のように定義する。  
-入力は有限の長さのペア$<k_j; v_j>$のシーケンスで、$k_j$と$v_j$はバイナリ文字列。  
+入力は有限の長さのペア$\lang k_j; v_j\rang$のシーケンスで、$k_j$と$v_j$はバイナリ文字列。  
 入力の長さ$n$は$n = \Sigma_j (|k_j| + |v_j|)$
 
 Definition 3.1  
-Fix an $\epsilon > 0$. An algorithm in $MRC^i$ consists of a sequence $<\mu_1, \rho_1, \mu_2, \rho_2, \cdots, \mu_R, \rho_R>$ of operations which outputs the correct answer with probability af least $3/4$ where:
+Fix an $\epsilon > 0$. An algorithm in $MRC^i$ consists of a sequence $\lang \mu_1, \rho_1, \mu_2, \rho_2, \cdots, \mu_R, \rho_R\rang$ of operations which outputs the correct answer with probability af least $3/4$ where:
 - Each $\mu_r$ is a randomized mapper implemented by a $RAM$ with $O(\log n)$-length words, that uses $O(n^{1 - \epsilon})$ space and time ploynomial in n.
 - Each $\rho_r$ is a randomized reducer implemented by a $RAM$ with $O(\log n)$-length words, that uses $O(n^{1-\epsilon})$ space and time plynomial in n.
-- The total space $\Sigma_{<k;v> \in U'_r}(|k| + |v|)$ used by $<key; value>$ pairs output by $\mu_r$ is $O(n^{2 - 2\epsilon})$.
+- The total space $\Sigma_{\lang k;v\rang \in U'_r}(|k| + |v|)$ used by $\lang key; value\rang$ pairs output by $\mu_r$ is $O(n^{2 - 2\epsilon})$.
 - The number of rounds $R = O(\log^i n)$.
 
 RAMがペアーのシーケンスを出力するとしても、マルチセットとして解釈する。
@@ -144,7 +144,7 @@ mapperとreducerは自身が受け取った入力ではなく、元の問題の�
 一方この定義では小さい$\epsilon$も許容しており、この場合も$n$がとても大きい場合には、線形のときと同様に大量のマシンが必要になってしまうが、マシンの台数を$O(n^{1/2})$とするのも不自然だと考えられる。
 
 ### Memory Restrictions
-mapperとreducerは$O(n^{1 - \epsilon})$のメモリを持つマシンの上で動作するので、すべてのペア$<key; value>$のサイズは$O(n^{1-\epsilon})$である必要がある。
+mapperとreducerは$O(n^{1 - \epsilon})$のメモリを持つマシンの上で動作するので、すべてのペア$\lang key; value\rang$のサイズは$O(n^{1-\epsilon})$である必要がある。
 
 また、トータルのメモリのサイズは$O(n^{2 - 2\epsilon})$である。
 reducerはすべてのmapperの処理が終わってからしか動作できないので、全mapperの出力である$U'_r$のサイズは$O(n^{2 - 2\epsilon})$である必要がある。
@@ -158,11 +158,11 @@ reducerはすべてのmapperの処理が終わってからしか動作できな�
 
 Lemma 3.1  
 Consider round $r$ of the execution of an algorithm in $MRC$. Let $K_r$ be the set of keys in $U'_r$, let $V_r$ be the multiset of values in $U'_r$ and let $V_{k,r}$ denote the multiset of values in $U'_r$ that have key $k$.  
-Then $K_r$ and $V_r$ can be partitioned across $\Theta(n^{1 - \epsilon})$ machines such that all machines get $O(n^{1-\epsilon})$ bits, and the pair $<k, V_{k,r}>$ gets sent to the same machine.
+Then $K_r$ and $V_r$ can be partitioned across $\Theta(n^{1 - \epsilon})$ machines such that all machines get $O(n^{1-\epsilon})$ bits, and the pair $\lang k, V_{k,r}\rang$ gets sent to the same machine.
 
 証明には以下の事実とminimum makespan scheduling problemに対するGrahan's greedy algorithmを利用する。  
-[参考文献1]()  
-[参考文献2]()
+[参考文献1](https://dl.acm.org/doi/10.1145/1478873.1478901)  
+[参考文献2](https://link.springer.com/book/10.1007/978-3-662-04565-7)
 
 事実
 - $s(V_r) + S(K_r) \leq s(U'_r) = O(n^{2 - 2\epsilon})$
@@ -171,7 +171,7 @@ Then $K_r$ and $V_r$ can be partitioned across $\Theta(n^{1 - \epsilon})$ machin
   - reducerのスペースが$O(n^{1 - \epsilon})$に制限されているため
 
 
-Graham's greedy algorithmより、一つのマシンに割り当てられる最大のビット数は平均ロードと$<k, V_{k,r}>$の最大ビット数の和よりも大きくならない。
+Graham's greedy algorithmより、一つのマシンに割り当てられる最大のビット数は平均ロードと$\lang k, V_{k,r}\rang$の最大ビット数の和よりも大きくならない。
 
 $$
 \leq \frac{s(V_r) + s(K_r)}{\rm{number\ of\ machines}} + \max_{k \in K_r}(|k| + s(V_{k,r})) \\
@@ -195,8 +195,8 @@ mapperとreducerが元の問題の入力サイズの多項式時間の計算能�
 ## Comparing MapReduce and PRAMs
 現在最も広く有名な並列計算のモデルPRAM
 これに次ぐのが以下の2つ
-- [LogP]()
-- [BSP]()
+- [LogP](https://dl.acm.org/doi/10.1145/155332.155333)
+- [BSP](https://dl.acm.org/doi/10.1145/79173.79181)
 
 これらの3つのモデルはアーキテクチャに依存しないが、アーキテクチャに依存したモデルを研究している研究者もいる。
 
@@ -314,7 +314,7 @@ Consider a universe $\mathcal{U}$ of size $n$ and a collection $\mathcal{S} = \{
 
 **Input**  
 サブルーチンへの入力は$i \in [k]$について、以下の3種類で構成される。
-- $<i; u>$のリスト
+- $\lang i; u\rang$のリスト
   - $u \in S_i$ 
 - $g_i$
 - $h_i$
@@ -327,28 +327,28 @@ Consider a universe $\mathcal{U}$ of size $n$ and a collection $\mathcal{S} = \{
   - $[k] \to [t]$
 
 **Map 1**  
-各$<i; u>$を$<r; (u; i)>$にmapする。
+各$\lang i; u\rang$を$\lang r; (u; i)\rang$にmapする。
 - $r$はブロック$B_{hash_1(i)}$に属するreducerから一様ランダムに選ぶ
 
-各$g_i$と$h_i$を$<b;(g_i, i)>$と$<b; (h_i, i)>$にmapする。
+各$g_i$と$h_i$を$\lang b;(g_i, i)\rang$と$\lang b; (h_i, i)\rang$にmapする。
 - $b \in B_{hash_1(i)}$
   - すべてのブロック内のreducerに分配するため
   
 **Reduce 1**  
 reducerへの入力は以下のような形式になっている  
-$<r; ((u_1, i), \dots, (u_k, i), (g_i, i), (h_i, i))>$
+$\lang r; ((u_1, i), \dots, (u_k, i), (g_i, i), (h_i, i))\rang$
 - $\{u_1, u_2, \dots, u_k\} = T_j \subseteq S_i$
   - パーティションされた$S_i$の1つのパート
 
-reducerは$g_i(T_j)$を計算し$<r; (g_i(T_j), i, h_i)>$を出力する。
+reducerは$g_i(T_j)$を計算し$\lang r; (g_i(T_j), i, h_i)\rang$を出力する。
 
 **Map 2**  
-$<r; (g_i(T_j), i, h_i)>$を$<hash_2(i); (g_i(T_j), h_i)>$に変換する。
+$\lang r; (g_i(T_j), i, h_i)\rang$を$\lang hash_2(i); (g_i(T_j), h_i)\rang$に変換する。
 
 **Reduce 2**  
 最後のreducerに対する入力は以下のような形式になっている。  
-$<hash_2(i); ((g_i(T_1), h_i), (g_i(T_2), h_i), \dots, (g_i(T_B), h_i))>$  
-reducerは$h_i$を計算し、$<hash_2(i); f_i(S_i)>$を出力する。
+$\lang hash_2(i); ((g_i(T_1), h_i), (g_i(T_2), h_i), \dots, (g_i(T_B), h_i))\rang$  
+reducerは$h_i$を計算し、$\lang hash_2(i); f_i(S_i)\rang$を出力する。
 
 次の補題によって、Reduce 1でオーバーフローが起きないことが保証される。
 
@@ -383,7 +383,7 @@ Lemma 6.1よりアルゴリズムの設計者は特定のreducerがオーバー�
   - アルファベットの文字列
   -  $l_i \in \mathcal{L}$を$i$番目の文字とする
 
-$\mathcal{MRC}$の入力として、長さ$n$の文字列をペア$<i, l_i> i \in [N]$の集合で表す。
+$\mathcal{MRC}$の入力として、長さ$n$の文字列をペア$\lang i, l_i\rang i \in [N]$の集合で表す。
 この集合はuniverse $\mathcal{U}$となる。
 
 各$l \in \mathcal{L}$について、$l$を含むペアの集合を$S_l \subseteq \mathcal{U}$とする。
@@ -444,7 +444,7 @@ s-t connectivityでは
 ステップ3  
 $s$と$t$が同じラベルを持っていたらtrueを出力し、もっていなかったらfalseを出力する。
 
-画像入れる
+[アルゴリズムの流れ](https://umisan.github.io/article_memo/a_model_of_computation_for_mapreduce/labeling.png)
 
 Lemma 6.4  
 At any point of the algorithm, if any two nodes $s$ and $t$ have the same label, then there is a path from $s$ to $t$ in $G$.
