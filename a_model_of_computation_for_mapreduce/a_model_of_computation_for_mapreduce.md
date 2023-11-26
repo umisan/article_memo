@@ -359,7 +359,7 @@ Each reducer in step Reduce 1 will have $\tilde{O}(n^{1-\epsilon})$ elements map
 1. $n^\epsilon$個のreducerで構成されるブロック全体に高い確率で$\tilde{O}(n)$個の要素しかマップされないことを示す。
 2. ブロック内のどのreducerに個別の要素がマップされるかは一様ランダムに選ばれるので、チェルノフバウンドを利用して補題を示す。
 
-細かい証明は省略します。
+（証明がよくわからないので一緒に考えてもらう。）
 
 Lemma 6.3  
 With high probability, each reducer in step Reduce 2 will have at most $n^{1-\epsilon}$ values of $g_i$ mapped to it.
@@ -372,3 +372,179 @@ $k \geq t$のとき$\frac{k}{t} \leq n^{1-\epsilon}$であることを利用し�
 
 Lemma 6.3と同じような議論で、reducerは$g_i$と$h_i$を持つのに十分なメモリを持っていることを示せる。
 Lemma 6.2とLemma 6.1と$g_i$と$h_i$がpolynomial-time computableである事実からLemma 6.1が証明できる。
+
+## Application of the Functions Lemma
+Lemma 6.1よりアルゴリズムの設計者は特定のreducerがオーバーロードしてしまうことを考える必要がなくなる。
+ここから具体的なLemma 6.1の利用例を見ていく。
+
+### Frequency Moments
+一度取り上げた$k^{th}$ frequency momentsについて再び考える。
+- $\mathcal{L}$
+  - アルファベットの文字列
+  -  $l_i \in \mathcal{L}$を$i$番目の文字とする
+
+$\mathcal{MRC}$の入力として、長さ$n$の文字列をペア$<i, l_i> i \in [N]$の集合で表す。
+この集合はuniverse $\mathcal{U}$となる。
+
+各$l \in \mathcal{L}$について、$l$を含むペアの集合を$S_l \subseteq \mathcal{U}$とする。
+
+frequency momentは以下の2ステップで計算できる。
+1. $f_l = |S_l|^k$を計算
+2. すべての$f_l$の戻り値の総和を計算
+
+$f_l$は$\mathcal{MRC}$-parallelizable functionで$g$と$h$は以下のように定義できる。
+- $g(\{t_1, t_2, \dots, t_k\}) = k$
+- $h(i_1, i_2, \dots, i_m) = (i_1 + i_2 + \cdots + i_m)^k$
+
+これによって、任意の$S_l$のパーティション$\mathcal{T} = (T_1, T_2, \dots, T_m)$について
+- $h(g(T_1), g(T_2), \dots, g(T_m)) = |S_l|^k$
+
+が成り立つ。
+
+以上より、簡単なfunction lemmaの応用によって$f_l(S_l)$を計算することができる。
+最後に、もう一度function lemmaを応用して$\Sigma_{l \in \mathcal{L}} f_l(S_l)$を計算することでfrequency momentを計算することができる。
+
+### Undirected $s-t$ connectivity
+s-t connectivityでは
+- $N$ノードのグラフ$G = (V, E)$
+- $s, t \in V$
+
+が与えられたときに、$s$から$t$のパスが存在するかを判定する問題
+
+グラフが比較的密である場合($|E| = N^{1 + \Omega(1)}$)は隣接グラフの$N$乗を計算することで$O(\log N)$ラウンドで解くことができる。
+
+しかし、グラフが疎である場合は隣接行列がメモリに乗り切らないため他のアプローチが必要になる。
+
+この章では、疎なグラフの$s-t$ connectivityを$O(\log N)$ラウンドで解くシンプルなラベリングアルゴリズムを提案する。
+
+**アルゴリズムで利用する定義**
+- $l(v)$
+  - $v \in V$が持つラベル
+  - $v$が所属する連結部分を表す
+- $L_v \subseteq V$
+  - ラベル$v$を持つノードの集合
+- $\Gamma(v)$
+  - $v$の隣接ノード
+- $\Gamma(S)$ ($S$は集合)
+  - $S$に含まれるノードの隣接ノードのうち$S$に含まれないものすべての集合
+- $\Gamma'(v) = \Gamma(L_v)$
+- $\pi$
+  - ノードの任意の全順序
+
+**アルゴリズムの流れ**  
+ステップ1  
+各$v \in V$について$l(v) = v$に初期化し状態をアクティブとする
+
+ステップ2  
+各$i = 1, 2, 3, \dots, O(\log N)$について
+1. 各アクティブノードを$\frac{1}{2}$の確率でリーダーとする
+2. 各リーダーでないノード$w$について、$\pi$における最も小さいノード$w^* \in \Gamma'(w)$を探す
+3. $w^*$が存在したら、$w$の状態をパッシブとしラベル$w$を持っているノードのラベルを$w^*$に上書きする
+
+ステップ3  
+$s$と$t$が同じラベルを持っていたらtrueを出力し、もっていなかったらfalseを出力する。
+
+画像入れる
+
+Lemma 6.4  
+At any point of the algorithm, if any two nodes $s$ and $t$ have the same label, then there is a path from $s$ to $t$ in $G$.
+
+帰納法で証明  
+$l(s) \neq l(t)$だったが、イテレーション後に$l(s) = l(t)$となるようなケースを考える。  
+$s \in L_w$、$t \in L_{w^*}$とすると、帰納法の仮定より$s$から$w$へのパスと$t$から$w^*$へのパスが存在する。  
+また、$\Gamma'(v)$の定義より$l(u) = l(w)$かつ$(u, w^*) \in E$が存在する$u$があるため、$s \to w \to u \to w^* \to t$というパスが存在する。
+
+Lemma 6.5
+Every connected component of $G$ has a unique label after $O(\log N)$ rounds wigh high probability.
+
+証明の方針  
+ある連結部分に含まれるラベルの数が期待値でコンスタントファクターで減少していくことを示す。  
+(証明がよくわからないので一緒に考えてもらう)
+
+ここまでで、アルゴリズムが正しいことは証明できたので、どうやってMapReduceで実装するかを考える。  
+並列化の鍵となるのは
+- リーダーセレクション
+- フォロワーセレクション
+- リラベリング
+
+これらはすべて並列に実行することができる。
+
+並列にリーダーを選択することは自明に可能。  
+フォロワーの選択のために、univarsal hash function $hash_1: V \to \{0, 1\}$を定義する。
+リーダーの集合は正確にはアクティブな$v \in V$で$hash_1(v) = 1$のものである。
+
+次に各フォロワー$w$の$w^*$を計算することを考える。
+$w^*$を計算するためには最小のラベルを計算する必要がある。
+$\min$は$\mathcal{MRC}$-parallelizable functionなので、サブルーチンとして利用できる。
+よって、あとは$\Gamma'(w)$を計算できれば良い。
+これは、すべての辺をスキャンすることで実現できる。
+
+1. 各辺$u, v$に対してラベルが等しいかどうかチェックする
+2. ラベルが異なる場合、$l(v) \in \Gamma(l(u))$、$l(u) \in \Gamma(l(v))$となる
+   - $u, v$それぞれの$w^*$の候補を見つけたことになる
+
+最後にリラベリングステップについて考える。
+リラベリングステップではラベル$w$を持つのすべてのノードのラベルを$w^*$に更新する必要がある。
+
+部分集合$L_w$に対して、$f_w$をリラベル関数とする。
+
+$\{L_w\}$と$\{f_w\}$はfunction lemmaの条件を満たすのでMapReduceで実行可能である。
+
+# Simulating PRAMS via MapReduce
+THEOREM 7.1  
+Any $CREW$ $PRAM$ algorithm using $O(n^{2 - 2\epsilon})$ total memory, $O(n^{2 - 2\epsilon})$ processors ant $t = t(n)$ time can be run iin $O(t)$ rounds in $\mathcal{DMRC}$.
+
+この定理は、条件を満たす$PRAM$アルゴリズムは$\mathcal{DMRC}$によってシミュレーションできることを示している。
+
+シミュレーションの構造
+- $O(n^{2 - 2\epsilon})$個のreducerをプロセッサーのシミュレーションに用いる
+- 追加で$O(n^{2 - 2 \epsilon})$個のreducerをメモリロケーションのシミュレーションに用いる
+
+コンセプトとしてはmapperをメモリのリクエストのルーターとして利用し、reducerを特定のプロセッサーとして利用するようなイメージとなっている。
+
+証明の方針  
+シミュレーション問題をメモリロケーションの更新をトラッキングする問題に還元する。  
+mapperとreducerので利用する諸定義
+- $b_i^t$は$\langle address, value\rangle$のペアの集合
+  - プロセッサー$i$が時刻$t$で読み込むデータを表す
+  - プロセッサー$i$がデータを読み込まない場合$b_i^t = \emptyset$
+- $w_i^t$は$\lang address, value \rang$のペア
+  - プロセッサー$i$が時刻$t$で書き込むデータを表す
+  - プロセッサー$i$がデータを書き込まない場合$w_i^t = \emptyset$
+- $r_i^t$はプロセッサー$i$が時刻$t$で必要なメモリアドレス
+
+計算の流れ  
+シミュレーションでは以下のように計算が実行される。
+1. 元のアルゴリズムの計算を実行するreducerでプロセッサーをシミュレーション
+2. 1の結果による書き込みと次の処理のための読み込みリクエストをmapperでルーティング
+3. メモリロケーションをシミュレーションするreducerで2の結果を出力
+4. 1の処理につなげるために3の結果をmapperでルーティング
+
+それぞれのステップで利用されるmapperとreducerは以下のように定義する。  
+- reducer $\rho_1^t$
+  - ステップ1で元のアルゴリズムの計算を実行するreducer
+  - 入力: $\lang i; b_i^t\rang$
+  - 出力: $\lang i; r_i^{t + 1}, w_i^t \rang$
+- mapper $\mu_1^t$
+  - スッテプ1の結果をルーティングするmapper
+  - 入力: $\lang i; r_i^{t + 1}, w_i^t \rang$
+  - 出力1: $\lang r^{t + 1}; i \rang$
+    - 読み込みリクエスト
+  - 出力2: $\lang a; w_i^t, i \rang$
+    - 書き込みリクエスト
+- reducer $p_2^t$
+  - メモリロケーションをシミュレーションするreducer
+  - 入力1: $\lang a_j; (a_j, v_j), i \rang$
+    - アドレス$a_j$を$v_j$に書き換えるリクエスト
+    - $CREW$なので同時に書き込まれることはない
+  - 入力2: $\lang a_j; i\rang$
+    - 読み込みリクエスト
+  - 出力: $\lang a_j; (a_j, v_i), i\rang$
+- mapper $\mu_2^t$
+  - リクエストの結果をルーティングするmapper
+  - 入力: $\lang a; (a_j, v_j), i\rang$
+  - 出力: $\lang a_j, v_j\rang$
+
+
+# 論文のリンク
+[A Model of Computation for MapReduce](https://theory.stanford.edu/~sergei/papers/soda10-mrc.pdf)
