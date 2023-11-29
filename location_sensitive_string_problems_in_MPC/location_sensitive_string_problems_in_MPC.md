@@ -118,6 +118,45 @@ LCPの計算における問題点
 
 ブロック数は$O(n^{1 - \epsilon})$個存在するため、3のステップを1つのマシンで行う場合は$O(n^{2\epsilon})$個のマシンを用意し、それぞれにユニークなブロックのペアをもたせる必要がある。
 
+このようなデータ構造であるLCPQ oracleは$k = O(n^{1 + \epsilon})$個の任意のLCPクエリ$Q = \{q_1, q_2, \dots, q_k\}$に$O(1)$ラウンドで答える事ができる。
+
+LCPQ oracleの構築にはハッシュを利用するため、この研究のアルゴリズムはすべて非決定的である。
+また、この研究のアルゴリズムでは、$O(\log n)$個の大きな素数を剰余の計算に利用する必要がある。
+このコミュニケーションラウンドを避けるために、この研究ではマシンのメモリ制約に$O(\log n)$を追加する。
+
+また、各マシンは$n^\epsilon$個のハッシュ値を保存する必要があるので、$0 < \epsilon \leq 0.5$という制約も追加する必要がある。
+
+**Lemma 3.1**  
+For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm, with $\tilde{O}(n^{1 + \epsilon})$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per machine, which initializes the Longest Common Prefix Query(LCPQ) Oracle in $O(1)$ rounds w.h.p., and then computes a collection of $k = O(n^{1 + \epsilon})$ queries, $Q = \{q_1, q_2, \dots, q_k\}$, in $O(1)$ rounds.
+
+これまで説明しててきた基本的なLCPQ oracleから発展させてcompressed LCPQ oracleというものも提案している。
+
+**Theorem 3.2**
+For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm with $\tilde{O}(n^{1 - \epsilon})$ memory per machine which initializes an LCPQ oracle in $O(1)$ rounds w.h.p., and then processes a collection of $k$ queries, $Q = \{q_1, q_2, \dots, q_k\}$, $O(1)$ rounds. The total memory used by this algorithm is $\tilde{O}(n + k + \min(n, k) \cdot n^\epsilon)$.
+
+table 3を乗せる
+
+## LPSとLCS
+LPSとLCSはLCQ queryを使って解くことができる。
+
+**Theorem 3.3**  
+For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm that solves Longest Palindrome SubString(LPS) with $\tilde{O}(n)$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per processor, w.h.p.
+
+**Theorem 3.4**
+For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm that solves Longest Common Substring(LCS) with $\tilde{O}(n^{1 + \epsilon})$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per processor, w.h.p..
+
+既存のテクニックを使ったアルゴリズムでは、LPSとLCSともに$O(\frac{1}{\epsilon})$ラウンドが必要だったが、これが$O(1)$ラウンドに改善できている。
+LPSについてはトータルメモリも$O(n^{1 + \epsilon})$から$\tilde{O}(n)$に改善できている
+
+## Suffix Tree
+LCPQ oracleはsuffix arrayの構築にも利用できる。suffix arrayをsuffix treeに変換することができるため、LCPQ oracleを用いてsuffix treeを構築することができる。このsuffix treeの構築は既存の手法とは異なりAMPCを利用するとラウンド数とトータルメモリを削減することができる。
+
+**Theorem 3.5**  
+For $\epsilon \in (0, 0.5]$, there is an $O(1/\epsilon)$-round MPC algorithm for computing the suffix array of a given string $s$ with $\tilde{O}(n^{1 + \epsilon})$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per processor w.h.p..
+
+**Theorem 3.6**  
+(Suffix Tree in AMPC). For $\epsilon \in (0, 1]$, there is an $O(1)$-round AMPC algorithm for computing the suffix tree of a given string $s$ with $\tilde{O}(n)$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per processor with high probability.
+
 # ビルディングブロック
 
 # 論文情報
