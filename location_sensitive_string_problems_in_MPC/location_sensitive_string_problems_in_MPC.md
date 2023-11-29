@@ -158,6 +158,18 @@ For $\epsilon \in (0, 0.5]$, there is an $O(1/\epsilon)$-round MPC algorithm for
 (Suffix Tree in AMPC). For $\epsilon \in (0, 1]$, there is an $O(1)$-round AMPC algorithm for computing the suffix tree of a given string $s$ with $\tilde{O}(n)$ total memory and $\tilde{O}(n^{1 - \epsilon})$ memory per processor with high probability.
 
 # ビルディングブロック
+ここからこの研究のアルゴリズムで利用しているツールの説明に移る。
+- Block-based Data Structures
+- Modular Partitioning
+- Weighted Load Balancing
+
+また、ここでアルゴリズムで利用しているハッシュ関数についても定義しておく。
+$$
+hash(s[l:r)) = (\Sigma_{i = l}^{r - 1} s_i \cdot |\Sigma|^{r - 1 - i}) \mod p
+$$
+$p$は十分に大きな素数
+
+## Block-based Data Structures
 
 # 論文情報
 
