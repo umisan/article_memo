@@ -45,7 +45,19 @@ PRAMでもこれらの問題についてよく研究されている。
 他にもlongest common subsequenceについての[研究]()や、バイナリ文字列のsufix treeの構築に関する[研究]()がある。
 
 # モデル定義
+モデルはMPCとAMPCを利用する。
 
+**MPC**
+- サイズ$O(n)$の入力がマシンに分配される
+- 各マシンは$O(n^{1 - \epsilon})$のメモリを持つ
+- 各ラウンドでマシンは任意の計算を行い、ラウンドの最後に相互に通信する
+
+この研究では$0 < \epsilon \leq 0.5$と仮定している。
+
+**AMPC**  
+Adaptive MPCと呼ばれるモデル。
+基本的にはMPCと同じモデルだが、各マシンはサイズ$O(n)$のshared memoryが利用できることが特徴。
+このshared memoryに書き込まれたデータをマシンは必要なときに読み出せる。
 
 # 問題定義
 記号の定義
@@ -170,6 +182,63 @@ $$
 $p$は十分に大きな素数
 
 ## Block-based Data Structures
+Block-based data structuresでは、入力文字列$s$はサイズ$O(n^{1 - \epsilon})$の$n^\epsilon$個の連続するブロックに分割される。(おそらくアルゴリズムによってというよりは、初期の入力として分割して与えられる。)
+
+
+記号の定義
+- ブロック
+  - $b_0, b_1, \dots, b_{n^\epsilon - 1}$
+- マシン
+  - ブロック$b_\alpha$を持つマシンを$\mu_{\alpha}$とする
+  
+問題に2つ目の入力文字列$s'$がある場合は、ブロックとマシンをそれぞれ$b'_\beta, \mu'_\beta$と表記する。
+入力文字列のサイズが異なる場合は、$s$と$s'$に含まれない特殊な文字列で調整する。
+
+あるマシン$\mu_\alpha$は以下のブロックを持つとする
+- $b_{\alpha - 1}$
+- $b_\alpha$
+- $b_{\alpha + 1}$
+
+すなわち、自分のブロックの前後のブロックにもアクセスすることができる。
+
+**Definition 4.1**  
+(Block $b_\alpha$ and Block Machine $\mu_\alpha$). There is a collection of $n^\epsilon$ machines $\{\mu_0, \mu_1, \dots, \mu_{n^\epsilon - 1}\}$ refered to as block machine for string $s$ (and $\{\mu'_0, \mu'_1, \dots, \mu'_{n^\epsilon - 1}\}$ for string $s'$), where $\mu_\alpha$ (and $\mu'_\beta$) contains the substring of the $\alpha$-th block of $s$ (and the $\beta$-th block $s'$) denoted by $b_\alpha = s[\alpha n^{1 - \epsilon}: (\alpha + 1)n^{1 - \epsilon})$.
+
+このデータ構造は以下のように利用される。
+- ある関数$f$をすべてのブロックに適用する
+  - $f$はブロックから何らかの情報を抽出する関数
+- $f$で抽出した情報を1つのマシンに集める
+  - $\epsilon \leq 0.5$なのでこれが可能
+
+$f$には以下のようなマージ関数$g$が存在する必要がある。
+- $f(s) = g(f(s[0:i]), f(s[i:n]), i, n)$
+
+また、各マシンは自身のブロックについてセグメント木を構成し、$f(b_\alpha[l:r])$を高速に計算できるようにしておく。
+これによって、$O(n)$個の$f(s[l:r])$クエリを2ラウンドで計算することができる。
+
+## Modular Partitioning
+長さ$n$の配列のModular Partitioningは、配列の要素を$n^\epsilon$の剰余に分割すること。
+
+Block-based data structuresで分配されたブロック$b_\alpha$の部分文字列のハッシュ値を計算する場合を例に考える。  
+
+- 各$\alpha n^\epsilon \leq i \leq \min\{(\alpha + 1)n^\epsilon, n\}$について$hash(s[i: i + n^\epsilon])$を計算する
+- 各$0 \leq x < n^\epsilon$についてマシン$\lambda_x$を用意し、$i \mod n^\epsilon = x$となる部分文字列のハッシュを割り当てる
+
+これによって、1つのマシンで任意の$i$から始まる部分文字列についての計算を行えるようになる。
+
+Figure3入れる
+
+**Definition 4.2**  
+We denote a collection of $n^\epsilon$ mod machines $\{\lambda_0, \lambda_1, \lambda_{n^\epsilon - 1}\}$ for string $s$ (and $\{\lambda'_0, \lambda'_1, \dots, \lambda'_{n^\epsilon - 1}\}$ for string $s'$), where $\lambda_x$ (and $\lambda'_x$) contains the hash of substrings of length $O(n^\epsilon)$ starting at indices $i$ so that $i \mod n^\epsilon = x$.
+
+
+## Weighted Load Balancing
+この研究のアルゴリズムでは多くのクエリを並列に処理する必要がある。
+このクエリを適切にマシンに分配する必要がある。
+Weighted load balancingはメモリ制約に違反しないように、データを割り当てられたクエリに比例して配布する2-roundアルゴリズムである。
+
+アルゴリズム1を貼る
 
 # 論文情報
+[Location-Sensitive String Problems in MPC](https://dl.acm.org/doi/pdf/10.1145/3558481.3591090)
 
