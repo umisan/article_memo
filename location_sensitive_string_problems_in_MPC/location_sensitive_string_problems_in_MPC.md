@@ -92,7 +92,7 @@ Adaptive MPCと呼ばれるモデル。
 - 各ノードは$s$の部分文字列を表す
   - あるノードの文字列は根からノードまでたどる辺の文字列を結合したもの
 
-例の画像入れる
+![suffix tree](https://umisan.github.io/article_memo/location_sensitive_string_problems_in_MPC/suffix-tree.JPG)
 
 suffix treeはよく２つの文字列$s, s'$を特殊文字#で結合した$s$#$s'$に対して作られる。
 
@@ -146,7 +146,7 @@ For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm, with $\tild
 **Theorem 3.2**
 For $\epsilon \in (0, 0.5]$, there is an $O(1)$-round MPC algorithm with $\tilde{O}(n^{1 - \epsilon})$ memory per machine which initializes an LCPQ oracle in $O(1)$ rounds w.h.p., and then processes a collection of $k$ queries, $Q = \{q_1, q_2, \dots, q_k\}$, $O(1)$ rounds. The total memory used by this algorithm is $\tilde{O}(n + k + \min(n, k) \cdot n^\epsilon)$.
 
-table 3を乗せる
+![lcpq oracle result](https://umisan.github.io/article_memo/location_sensitive_string_problems_in_MPC/lcpq-oracle-result.JPG)
 
 ## LPSとLCS
 LPSとLCSはLCQ queryを使って解くことができる。
@@ -226,7 +226,7 @@ Block-based data structuresで分配されたブロック$b_\alpha$の部分文�
 
 これによって、1つのマシンで任意の$i$から始まる部分文字列についての計算を行えるようになる。
 
-Figure3入れる
+![modular partitioning](https://umisan.github.io/article_memo/location_sensitive_string_problems_in_MPC/modular-partitioning.JPG)
 
 **Definition 4.2**  
 We denote a collection of $n^\epsilon$ mod machines $\{\lambda_0, \lambda_1, \lambda_{n^\epsilon - 1}\}$ for string $s$ (and $\{\lambda'_0, \lambda'_1, \dots, \lambda'_{n^\epsilon - 1}\}$ for string $s'$), where $\lambda_x$ (and $\lambda'_x$) contains the hash of substrings of length $O(n^\epsilon)$ starting at indices $i$ so that $i \mod n^\epsilon = x$.
@@ -237,7 +237,7 @@ We denote a collection of $n^\epsilon$ mod machines $\{\lambda_0, \lambda_1, \la
 このクエリを適切にマシンに分配する必要がある。
 Weighted load balancingはメモリ制約に違反しないように、データを割り当てられたクエリに比例して配布する2-roundアルゴリズムである。
 
-アルゴリズム1を貼る
+![weighted load balancing](https://umisan.github.io/article_memo/location_sensitive_string_problems_in_MPC/weighted-load-balancing.JPG)
 
 # 論文情報
 [Location-Sensitive String Problems in MPC](https://dl.acm.org/doi/pdf/10.1145/3558481.3591090)
